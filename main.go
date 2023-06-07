@@ -7,6 +7,8 @@ import (
 	"github.com/docker/docker/client"
 	"github.com/golang-collections/collections/queue"
 	"github.com/google/uuid"
+	"log"
+	"strconv"
 	"time"
 )
 
@@ -48,41 +50,76 @@ func stopContainer(d *task.Docker, containerId string) *task.DockerResult {
 }
 
 func main() {
-	db := make(map[uuid.UUID]*task.Task)
+
+	//host := os.Getenv("CUBE_HOST")
+	//port, _ := strconv.Atoi(os.Getenv("CUBE_PORT"))
+
+	host := "127.0.0.1"
+	port, _ := strconv.Atoi("8089")
+
+	fmt.Println("Starting Cube worker")
+
 	w := worker.Worker{
 		Queue: *queue.New(),
-		Db:    db,
+		Db:    make(map[uuid.UUID]*task.Task),
 	}
-
-	t := task.Task{
-		ID:    uuid.New(),
-		Name:  "test-container-1",
-		State: task.Scheduled,
-		Image: "strm/helloworld-http",
-	}
-
-	// first time the worker will see the task
-	fmt.Println("starting task")
-	w.AddTask(t)
-	result := w.RunTask()
-	if result.Error != nil {
-		panic(result.Error)
-	}
-
-	t.ContainerID = result.ContainerId
-
-	fmt.Printf("task %s is running in container %s\n", t.ID, t.ContainerID)
-	fmt.Println("Sleepy time")
-	time.Sleep(time.Second * 30)
-
-	fmt.Printf("stopping task %s\n", t.ID)
-	t.State = task.Completed
-	w.AddTask(t)
-	result = w.RunTask()
-	if result.Error != nil {
-		panic(result.Error)
-	}
+	api := worker.Api{Address: host, Port: port, Worker: &w}
+	go runTasks(&w)
+	api.Start()
 }
+
+func runTasks(w *worker.Worker) {
+	for {
+		if w.Queue.Len() != 0 {
+			result := w.RunTask()
+			if result.Error != nil {
+				log.Printf("Error running task: %v\n", result.Error)
+			}
+		} else {
+			log.Printf("No tasks to process currently.\n")
+		}
+		log.Println("Sleeping for 10 seconds.")
+		time.Sleep(10 * time.Second)
+	}
+
+}
+
+//func main() {
+//	db := make(map[uuid.UUID]*task.Task)
+//	w := worker.Worker{
+//		Queue: *queue.New(),
+//		Db:    db,
+//	}
+//
+//	t := task.Task{
+//		ID:    uuid.New(),
+//		Name:  "test-container-1",
+//		State: task.Scheduled,
+//		Image: "strm/helloworld-http",
+//	}
+//
+//	// first time the worker will see the task
+//	fmt.Println("starting task")
+//	w.AddTask(t)
+//	result := w.RunTask()
+//	if result.Error != nil {
+//		panic(result.Error)
+//	}
+//
+//	t.ContainerID = result.ContainerId
+//
+//	fmt.Printf("task %s is running in container %s\n", t.ID, t.ContainerID)
+//	fmt.Println("Sleepy time")
+//	time.Sleep(time.Second * 30)
+//
+//	fmt.Printf("stopping task %s\n", t.ID)
+//	t.State = task.Completed
+//	w.AddTask(t)
+//	result = w.RunTask()
+//	if result.Error != nil {
+//		panic(result.Error)
+//	}
+//}
 
 //func main() {
 //	t := task.Task{

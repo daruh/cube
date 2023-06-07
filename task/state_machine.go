@@ -65,11 +65,11 @@ func (s *StateMachine) SetFailed(currentState State) error {
 }
 
 var stateTransitionMap = map[State][]State{
-	Pending:   {Scheduled},
-	Scheduled: {Running, Failed},
-	Running:   {Running, Completed, Failed},
-	Completed: {},
-	Failed:    {},
+	Pending:   []State{Scheduled},
+	Scheduled: []State{Scheduled, Running, Failed},
+	Running:   []State{Running, Completed, Failed},
+	Completed: []State{},
+	Failed:    []State{},
 }
 
 func Contains(states []State, state State) bool {
@@ -79,4 +79,8 @@ func Contains(states []State, state State) bool {
 		}
 	}
 	return false
+}
+
+func ValidStateTransition(src State, dst State) bool {
+	return Contains(stateTransitionMap[src], dst)
 }

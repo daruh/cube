@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"log"
 	"net/http"
+	"time"
 
 	"encoding/json"
 	"github.com/golang-collections/collections/queue"
@@ -55,6 +56,14 @@ func (m *Manager) SelectWorker() string {
 	return m.Workers[newWorker]
 }
 
+func (m *Manager) GetTasks() []*task.Task {
+	tasks := []*task.Task{}
+	for _, t := range m.TaskDb {
+		tasks = append(tasks, t)
+	}
+	return tasks
+}
+
 func (m *Manager) UpdateTasks() {
 	for _, worker := range m.Workers {
 		log.Printf("Checking worker %v for task updates", worker)
@@ -92,6 +101,15 @@ func (m *Manager) UpdateTasks() {
 			m.TaskDb[t.ID].ContainerID = t.ContainerID
 		}
 
+	}
+}
+
+func (m *Manager) ProcessTasks() {
+	for {
+		log.Println("Processing any tasks in the queue")
+		m.SendWork()
+		log.Println("Sleeping for 10 seconds")
+		time.Sleep(10 * time.Second)
 	}
 }
 

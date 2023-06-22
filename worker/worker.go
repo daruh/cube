@@ -76,6 +76,12 @@ func (w *Worker) runTask() task.DockerResult {
 	if task.ValidStateTransition(taskPersisted.State, taskQueued.State) {
 		switch taskQueued.State {
 		case task.Scheduled:
+			if taskQueued.ContainerID != "" {
+				result = w.StopTask(taskQueued)
+				if result.Error != nil {
+					log.Printf("%v\n", result.Error)
+				}
+			}
 			result = w.StartTask(taskQueued)
 		case task.Completed:
 			result = w.StopTask(taskQueued)

@@ -33,6 +33,8 @@ type Task struct {
 	RestartPolicy string
 	StartTime     time.Time
 	FinishTime    time.Time
+	RestartCount  int
+	HealthCheck   string
 }
 
 type TaskEvent struct {
